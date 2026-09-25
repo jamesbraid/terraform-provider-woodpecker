@@ -56,6 +56,10 @@ func (d *repositoryCronDataSource) Schema(
 				Computed:    true,
 				Description: "the name of the branch (uses default branch if empty)",
 			},
+			"enabled": schema.BoolAttribute{
+				Computed:    true,
+				Description: "whether the cron job is enabled (Woodpecker 3.13.0 or later)",
+			},
 			"creator_id": schema.Int64Attribute{
 				Computed:    true,
 				Description: "id of user who created the cron job",

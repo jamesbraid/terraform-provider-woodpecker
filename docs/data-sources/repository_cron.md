@@ -36,5 +36,6 @@ data "woodpecker_repository_secret" "test_secret" {
 - `branch` (String) the name of the branch (uses default branch if empty)
 - `created_at` (Number) date the cron job was created
 - `creator_id` (Number) id of user who created the cron job
+- `enabled` (Boolean) whether the cron job is enabled (Woodpecker 3.13.0 or later)
 - `name` (String) the name of the cron job
 - `schedule` (String) [cron expression](https://pkg.go.dev/github.com/robfig/cron#hdr-CRON_Expression_Format)

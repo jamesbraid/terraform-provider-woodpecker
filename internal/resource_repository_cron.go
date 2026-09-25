@@ -10,9 +10,11 @@ import (
 	"github.com/hashicorp/terraform-plugin-framework/path"
 	"github.com/hashicorp/terraform-plugin-framework/resource"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema"
+	"github.com/hashicorp/terraform-plugin-framework/resource/schema/boolplanmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/int64planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/planmodifier"
 	"github.com/hashicorp/terraform-plugin-framework/resource/schema/stringplanmodifier"
+	"github.com/hashicorp/terraform-plugin-framework/types"
 )
 
 type repositoryCronResource struct {
@@ -72,6 +74,14 @@ func (r *repositoryCronResource) Schema(_ context.Context, _ resource.SchemaRequ
 					stringplanmodifier.UseStateForUnknown(),
 				},
 			},
+			"enabled": schema.BoolAttribute{
+				Optional:    true,
+				Computed:    true,
+				Description: "whether the cron job is enabled. On Woodpecker 3.13.0 or later, new cron jobs default to enabled.",
+				PlanModifiers: []planmodifier.Bool{
+					boolplanmodifier.UseStateForUnknown(),
+				},
+			},
 			"creator_id": schema.Int64Attribute{
 				Computed:    true,
 				Description: "id of user who created the cron job",
@@ -122,9 +132,13 @@ func (r *repositoryCronResource) Create(
 ) {
 	var data repositoryCronModel
 
-	resp.Diagnostics.Append(req.Config.Get(ctx, &data)...)
+	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
 		return
+	}
+
+	if data.Enabled.IsNull() || data.Enabled.IsUnknown() {
+		data.Enabled = types.BoolValue(true)
 	}
 
 	wData, diags := data.toWoodpeckerModel(ctx)

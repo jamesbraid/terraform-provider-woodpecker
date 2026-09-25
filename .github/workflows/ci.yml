@@ -38,3 +38,8 @@ jobs:
         env:
           GITEA_IMAGE: gitea/gitea:1.24
           WOODPECKER_IMAGE: woodpeckerci/woodpecker-server:v3.8.0
+      - name: Woodpecker 3.18 cron enabled
+        run: go test -race ./internal -run '^TestRepositoryCronEnabled$'
+        env:
+          GITEA_IMAGE: gitea/gitea:1.24
+          WOODPECKER_IMAGE: woodpeckerci/woodpecker-server:v3.18.0

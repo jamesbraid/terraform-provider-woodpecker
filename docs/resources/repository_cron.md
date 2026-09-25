@@ -38,6 +38,7 @@ resource "woodpecker_repository_cron" "test" {
 ### Optional
 
 - `branch` (String) the name of the branch (uses default branch if empty)
+- `enabled` (Boolean) whether the cron job is enabled. On Woodpecker 3.13.0 or later, new cron jobs default to enabled.
 
 ### Read-Only
 

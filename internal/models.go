@@ -386,6 +386,7 @@ type repositoryCronModel struct {
 	Schedule     types.String `tfsdk:"schedule"`
 	CreatedAt    types.Int64  `tfsdk:"created_at"`
 	Branch       types.String `tfsdk:"branch"`
+	Enabled      types.Bool   `tfsdk:"enabled"`
 }
 
 func (m *repositoryCronModel) setValues(_ context.Context, cron *woodpecker.Cron) diag.Diagnostics {
@@ -396,6 +397,7 @@ func (m *repositoryCronModel) setValues(_ context.Context, cron *woodpecker.Cron
 	m.Schedule = types.StringValue(cron.Schedule)
 	m.CreatedAt = types.Int64Value(cron.Created)
 	m.Branch = types.StringValue(cron.Branch)
+	m.Enabled = types.BoolValue(cron.Enabled)
 	return nil
 }
 
@@ -408,6 +410,7 @@ func (m *repositoryCronModel) toWoodpeckerModel(_ context.Context) (*woodpecker.
 		Schedule:  m.Schedule.ValueString(),
 		Created:   m.CreatedAt.ValueInt64(),
 		Branch:    m.Branch.ValueString(),
+		Enabled:   m.Enabled.ValueBool(),
 	}, nil
 }
 
