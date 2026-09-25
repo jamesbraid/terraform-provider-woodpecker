@@ -37,6 +37,10 @@ func TestMain(m *testing.M) {
 }
 
 func testMainNoExit(m *testing.M) int {
+	if os.Getenv("WOODPECKER_UNIT_TESTS") == "1" {
+		return m.Run()
+	}
+
 	pool := newDockertestPool()
 
 	network := newDockerNetwork(pool)

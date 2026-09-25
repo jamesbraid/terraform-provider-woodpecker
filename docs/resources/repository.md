@@ -10,6 +10,10 @@ description: |-
 
 Provides a repository resource.
 
+Set `is_active = false` on an imported repository to deactivate it. New
+resources are activated on creation; import an existing inactive repository
+before managing its activation state.
+
 ## Example Usage
 
 ```terraform
@@ -33,8 +37,9 @@ resource "woodpecker_repository" "test_repo" {
 - `approval_allowed_users` (Set of String) the list of users who's pipelines never require an approval
 - `cancel_previous_pipeline_events` (Set of String) Enables to cancel pending and running pipelines of the same event and context before starting the newly triggered one (push, tag, pull_request, deployment).
 - `config_file` (String) The path to the pipeline config file or folder. By default, it is left empty which will use the following configuration resolution .woodpecker/*.yml -> .woodpecker/*.yaml -> .woodpecker.yml -> .woodpecker.yaml.
+- `is_active` (Boolean) whether the repo is active; existing repositories can be activated or deactivated
 - `netrc_trusted_plugins` (Set of String) Plugins that get access to netrc credentials that can be used to clone repositories from the forge or push them into the forge.
-- `require_approval` (String) Prevents malicious pipelines from exposing secrets or running harmful tasks by approving them before execution. Allowed values: forks, pull_requests, all_events
+- `require_approval` (String) Prevents malicious pipelines from exposing secrets or running harmful tasks by approving them before execution. Allowed values: none, forks, pull_requests, all_events
 - `timeout` (Number) after this timeout a pipeline has to finish or will be treated as timed out (in minutes)
 - `trusted` (Attributes) (see [below for nested schema](#nestedatt--trusted))
 - `visibility` (String) project visibility (public, private, internal), see [the docs](https://woodpecker-ci.org/docs/usage/project-settings#project-visibility) for more info
@@ -48,7 +53,6 @@ resource "woodpecker_repository" "test_repo" {
 - `forge_remote_id` (String) the unique identifier for the repository on the forge
 - `forge_url` (String) the URL of the repository on the forge
 - `id` (Number) the repository's id
-- `is_active` (Boolean) whether the repo is active
 - `is_private` (Boolean) whether the repo (SCM) is private
 - `name` (String) the name of the repository
 - `owner` (String) the owner of the repository

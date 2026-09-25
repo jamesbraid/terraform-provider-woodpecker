@@ -44,7 +44,7 @@ data "woodpecker_repository" "test_repo" {
 - `name` (String) the name of the repository
 - `netrc_trusted_plugins` (Set of String) Plugins that get access to netrc credentials that can be used to clone repositories from the forge or push them into the forge.
 - `owner` (String) the owner of the repository
-- `require_approval` (String) Prevents malicious pipelines from exposing secrets or running harmful tasks by approving them before execution. Allowed values: forks, pull_requests, all_events
+- `require_approval` (String) Prevents malicious pipelines from exposing secrets or running harmful tasks by approving them before execution. Allowed values: none, forks, pull_requests, all_events
 - `timeout` (Number) after this timeout a pipeline has to finish or will be treated as timed out (in minutes)
 - `trusted` (Attributes) (see [below for nested schema](#nestedatt--trusted))
 - `visibility` (String) project visibility (public, private, internal), see [the docs](https://woodpecker-ci.org/docs/usage/project-settings#project-visibility) for more info

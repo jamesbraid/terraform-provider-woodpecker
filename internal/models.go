@@ -287,6 +287,10 @@ func (m *repositoryModel) toWoodpeckerPatch(ctx context.Context) (*woodpecker.Re
 		converted := woodpecker.VisibilityMode(*visibility)
 		repo.Visibility = &converted
 	}
+	if requireApproval := m.RequireApproval.ValueStringPointer(); requireApproval != nil {
+		converted := woodpecker.ApprovalMode(*requireApproval)
+		repo.RequireApproval = &converted
+	}
 
 	diags.Append(m.CancelPreviousPipelineEvents.ElementsAs(ctx, &repo.CancelPreviousPipelineEvents, false)...)
 	diags.Append(m.NetrcTrustedPlugins.ElementsAs(ctx, &repo.NetrcTrustedPlugins, true)...)

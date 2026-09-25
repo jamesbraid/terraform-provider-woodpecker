@@ -2,7 +2,9 @@ package internal
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"net/http"
 	"slices"
 
 	"github.com/Kichiyaki/terraform-provider-woodpecker/internal/woodpecker"
@@ -194,7 +196,8 @@ func (r *repositoryResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				Description: "Prevents malicious pipelines from exposing secrets or " +
 					"running harmful tasks by approving them before execution. " +
 					fmt.Sprintf(
-						"Allowed values: %s, %s, %s",
+						"Allowed values: %s, %s, %s, %s",
+						woodpecker.ApprovalModeNone.String(),
 						woodpecker.ApprovalModeForks.String(),
 						woodpecker.ApprovalModePullRequests.String(),
 						woodpecker.ApprovalModeAllEvents.String(),
@@ -204,6 +207,7 @@ func (r *repositoryResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				},
 				Validators: []validator.String{
 					stringvalidator.OneOf(
+						woodpecker.ApprovalModeNone.String(),
 						woodpecker.ApprovalModeForks.String(),
 						woodpecker.ApprovalModePullRequests.String(),
 						woodpecker.ApprovalModeAllEvents.String(),
@@ -220,8 +224,9 @@ func (r *repositoryResource) Schema(_ context.Context, _ resource.SchemaRequest,
 				},
 			},
 			"is_active": schema.BoolAttribute{
+				Optional:    true,
 				Computed:    true,
-				Description: "whether the repo is active",
+				Description: "whether the repo is active; existing repositories can be activated or deactivated",
 				PlanModifiers: []planmodifier.Bool{
 					boolplanmodifier.UseStateForUnknown(),
 				},
@@ -327,6 +332,13 @@ func (r *repositoryResource) Create(ctx context.Context, req resource.CreateRequ
 	}
 
 	repoFullName := data.FullName.ValueString()
+	if !data.IsActive.IsNull() && !data.IsActive.IsUnknown() && !data.IsActive.ValueBool() {
+		resp.Diagnostics.AddError(
+			"Couldn't create inactive repository",
+			"Import an existing Woodpecker repository before managing it with is_active = false.",
+		)
+		return
+	}
 
 	repos, err := r.client.RepoList(woodpecker.RepoListOptions{All: true})
 	if err != nil {
@@ -378,9 +390,10 @@ func (r *repositoryResource) Read(ctx context.Context, req resource.ReadRequest,
 		return
 	}
 
-	repo, err := r.client.RepoLookup(data.FullName.ValueString())
+	repo, err := r.repositoryByName(data.FullName.ValueString())
 	if err != nil {
 		resp.Diagnostics.AddError("Couldn't get repository", err.Error())
+		return
 	}
 
 	resp.Diagnostics.Append(data.setValues(ctx, repo)...)
@@ -393,6 +406,12 @@ func (r *repositoryResource) Read(ctx context.Context, req resource.ReadRequest,
 
 func (r *repositoryResource) Update(ctx context.Context, req resource.UpdateRequest, resp *resource.UpdateResponse) {
 	var data repositoryModel
+	var previous repositoryModel
+
+	resp.Diagnostics.Append(req.State.Get(ctx, &previous)...)
+	if resp.Diagnostics.HasError() {
+		return
+	}
 
 	resp.Diagnostics.Append(req.Plan.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
@@ -405,7 +424,7 @@ func (r *repositoryResource) Update(ctx context.Context, req resource.UpdateRequ
 		return
 	}
 
-	repo, err := r.client.RepoPatch(data.ID.ValueInt64(), wData)
+	repo, err := r.updateRepository(&previous, &data, wData)
 	if err != nil {
 		resp.Diagnostics.AddError("Couldn't update repository", err.Error())
 		return
@@ -419,11 +438,59 @@ func (r *repositoryResource) Update(ctx context.Context, req resource.UpdateRequ
 	resp.Diagnostics.Append(resp.State.Set(ctx, &data)...)
 }
 
+func (r *repositoryResource) repositoryByName(fullName string) (*woodpecker.Repo, error) {
+	repo, err := r.client.RepoLookup(fullName)
+	if err == nil {
+		return repo, nil
+	}
+	var clientErr *woodpecker.ClientError
+	if !errors.As(err, &clientErr) || (clientErr.StatusCode != http.StatusForbidden && clientErr.StatusCode != http.StatusNotFound) {
+		return nil, err
+	}
+
+	repos, err := r.client.RepoList(woodpecker.RepoListOptions{All: true})
+	if err != nil {
+		return nil, err
+	}
+	idx := slices.IndexFunc(repos, func(repo *woodpecker.Repo) bool {
+		return repo.FullName == fullName
+	})
+	if idx < 0 {
+		return nil, fmt.Errorf("repository with name '%s' not found", fullName)
+	}
+	return repos[idx], nil
+}
+
+func (r *repositoryResource) updateRepository(previous, planned *repositoryModel, patch *woodpecker.RepoPatch) (*woodpecker.Repo, error) {
+	if previous.IsActive.ValueBool() == planned.IsActive.ValueBool() {
+		return r.client.RepoPatch(previous.ID.ValueInt64(), patch)
+	}
+
+	if planned.IsActive.ValueBool() {
+		activated, err := r.client.RepoPost(woodpecker.RepoPostOptions{ForgeRemoteID: previous.ForgeRemoteID.ValueString()})
+		if err != nil {
+			return nil, fmt.Errorf("activate repository: %w", err)
+		}
+		return r.client.RepoPatch(activated.ID, patch)
+	}
+
+	if _, err := r.client.RepoPatch(previous.ID.ValueInt64(), patch); err != nil {
+		return nil, err
+	}
+	if err := r.client.RepoDel(previous.ID.ValueInt64()); err != nil {
+		return nil, fmt.Errorf("deactivate repository: %w", err)
+	}
+	return r.repositoryByName(previous.FullName.ValueString())
+}
+
 func (r *repositoryResource) Delete(ctx context.Context, req resource.DeleteRequest, resp *resource.DeleteResponse) {
 	var data repositoryModel
 
 	resp.Diagnostics.Append(req.State.Get(ctx, &data)...)
 	if resp.Diagnostics.HasError() {
+		return
+	}
+	if !data.IsActive.ValueBool() {
 		return
 	}
 

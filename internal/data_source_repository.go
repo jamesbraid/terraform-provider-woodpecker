@@ -117,7 +117,8 @@ func (d *repositoryDataSource) Schema(
 				Description: "Prevents malicious pipelines from exposing secrets or " +
 					"running harmful tasks by approving them before execution. " +
 					fmt.Sprintf(
-						"Allowed values: %s, %s, %s",
+						"Allowed values: %s, %s, %s, %s",
+						woodpecker.ApprovalModeNone.String(),
 						woodpecker.ApprovalModeForks.String(),
 						woodpecker.ApprovalModePullRequests.String(),
 						woodpecker.ApprovalModeAllEvents.String(),
