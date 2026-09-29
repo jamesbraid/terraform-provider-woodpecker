@@ -1,6 +1,23 @@
-# Terraform Provider for Woodpecker CI [![Actions Status](https://github.com/Kichiyaki/terraform-provider-woodpecker/actions/workflows/ci.yml/badge.svg)](https://github.com/Kichiyaki/terraform-provider-woodpecker/actions/workflows/ci.yml)[![GitHub tag](https://img.shields.io/github/v/tag/Kichiyaki/terraform-provider-woodpecker?label=release)](https://github.com/Kichiyaki/terraform-provider-woodpecker/releases)[![license](https://img.shields.io/github/license/Kichiyaki/terraform-provider-woodpecker.svg)](https://github.com/Kichiyaki/terraform-provider-woodpecker/blob/master/LICENSE)
+# Terraform Provider for Woodpecker CI
 
 A Terraform provider used to interact with [Woodpecker CI](https://woodpecker-ci.org/) resources.
+
+This fork is based on [Kichiyaki's provider](https://github.com/Kichiyaki/terraform-provider-woodpecker).
+It adds management of cron job enabled state and reconciles repository approval
+and activation state.
+
+## Install
+
+```hcl
+terraform {
+  required_providers {
+    woodpecker = {
+      source  = "registry.terraform.io/jamesbraid/woodpecker"
+      version = "0.6.1"
+    }
+  }
+}
+```
 
 ## Local development
 
